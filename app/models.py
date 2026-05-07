@@ -137,3 +137,55 @@ class Promotion(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     venue = relationship("Venue", back_populates="promotions")
+
+
+class CompetitorType(str, enum.Enum):
+    cafe = "cafe"
+    restaurant = "restaurant"
+    fast_food = "fast_food"
+    food_truck = "food_truck"
+    bakery = "bakery"
+
+
+class MenuCategory(str, enum.Enum):
+    beverage = "beverage"
+    breakfast = "breakfast"
+    lunch = "lunch"
+    dinner = "dinner"
+    dessert = "dessert"
+    snack = "snack"
+    alcohol = "alcohol"
+
+
+class Competitor(Base):
+    __tablename__ = "competitors"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False, index=True)
+    address = Column(String, nullable=False)
+    distance_meters = Column(Integer, nullable=False)
+    competitor_type = Column(SAEnum(CompetitorType), nullable=False)
+    google_rating = Column(Float, nullable=True)
+    notes = Column(String, default="")
+    last_surveyed = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    menu_items = relationship("CompetitorMenuItem", back_populates="competitor", cascade="all, delete-orphan")
+
+
+class CompetitorMenuItem(Base):
+    __tablename__ = "competitor_menu_items"
+
+    id = Column(Integer, primary_key=True, index=True)
+    competitor_id = Column(Integer, ForeignKey("competitors.id"), nullable=False)
+    name = Column(String, nullable=False)
+    category = Column(SAEnum(MenuCategory), nullable=False)
+    price = Column(Float, nullable=False)
+    description = Column(String, default="")
+    # your own equivalent item name for direct comparison
+    our_item_name = Column(String, nullable=True)
+    our_item_price = Column(Float, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    competitor = relationship("Competitor", back_populates="menu_items")

@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Optional, List
 from pydantic import BaseModel, EmailStr, field_validator
 
-from app.models import VenueType, BookingStatus, EventType, EventStatus, PromoType
+from app.models import VenueType, BookingStatus, EventType, EventStatus, PromoType, CompetitorType, MenuCategory
 
 
 class VenueBase(BaseModel):
@@ -214,5 +214,87 @@ class PromotionOut(PromotionBase):
     usage_count: int
     is_active: bool
     created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+# ── Competitor Pricing ────────────────────────────────────────────────────────
+
+class CompetitorMenuItemBase(BaseModel):
+    name: str
+    category: MenuCategory
+    price: float
+    description: Optional[str] = ""
+    our_item_name: Optional[str] = None
+    our_item_price: Optional[float] = None
+
+
+class CompetitorMenuItemCreate(CompetitorMenuItemBase):
+    @field_validator("price")
+    @classmethod
+    def price_positive(cls, v: float) -> float:
+        if v <= 0:
+            raise ValueError("price must be positive")
+        return v
+
+
+class CompetitorMenuItemUpdate(BaseModel):
+    name: Optional[str] = None
+    category: Optional[MenuCategory] = None
+    price: Optional[float] = None
+    description: Optional[str] = None
+    our_item_name: Optional[str] = None
+    our_item_price: Optional[float] = None
+
+
+class CompetitorMenuItemOut(CompetitorMenuItemBase):
+    id: int
+    competitor_id: int
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class CompetitorBase(BaseModel):
+    name: str
+    address: str
+    distance_meters: int
+    competitor_type: CompetitorType
+    google_rating: Optional[float] = None
+    notes: Optional[str] = ""
+
+
+class CompetitorCreate(CompetitorBase):
+    @field_validator("distance_meters")
+    @classmethod
+    def dist_positive(cls, v: int) -> int:
+        if v <= 0:
+            raise ValueError("distance_meters must be positive")
+        return v
+
+    @field_validator("google_rating")
+    @classmethod
+    def rating_range(cls, v: Optional[float]) -> Optional[float]:
+        if v is not None and not (0.0 <= v <= 5.0):
+            raise ValueError("google_rating must be between 0 and 5")
+        return v
+
+
+class CompetitorUpdate(BaseModel):
+    name: Optional[str] = None
+    address: Optional[str] = None
+    distance_meters: Optional[int] = None
+    competitor_type: Optional[CompetitorType] = None
+    google_rating: Optional[float] = None
+    notes: Optional[str] = None
+    last_surveyed: Optional[datetime] = None
+
+
+class CompetitorOut(CompetitorBase):
+    id: int
+    last_surveyed: Optional[datetime] = None
+    created_at: datetime
+    menu_items: List[CompetitorMenuItemOut] = []
 
     model_config = {"from_attributes": True}
